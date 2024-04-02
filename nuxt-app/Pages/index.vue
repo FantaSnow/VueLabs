@@ -7,7 +7,7 @@ export default defineComponent({
   components: {Studentlist}
 })
 </script>
-
+я
 <template>
   <Studentlist></Studentlist>
 </template>

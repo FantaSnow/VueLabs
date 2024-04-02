@@ -1,34 +1,39 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-
+useHead({title: 'Product List'})
 const columns = [{
   key: 'id',
-  label: 'ID'
+  label: 'id',
+  sortable: true
 }, {
   key: 'title',
-  label: 'Title'
+  label: 'title',
+  sortable: true
+
 }, {
   key: 'description',
-  label: 'Description'
+  label: 'description',
+  sortable: true
 }, {
   key: 'price',
-  label: 'Price'
+  label: 'price'  ,
+  sortable: true
 }, {
   key: 'rating',
-  label: 'Rating'
+  label: 'Rating',
+  sortable: true
 },{
   key: 'brand',
-  label: 'Brand'
+  label: 'Brand',
+  sortable: true
 }, {
   key: 'category',
-  label: 'Category'
+  label: 'Category',
+  sortable: true
 }, {
   key: 'thumbnail',
-  label: 'Thumbnail'
+  label: 'Thumbnail',
+  sortable: true
 }]
-
-
-
 
 const { data } = await useFetch<any>('https://dummyjson.com/products');
 let productslist = data.value.products;
@@ -37,21 +42,35 @@ const q = ref('');
 const page = ref(1);
 const pageCount = 5;
 
-const filteredData = computed(() => {
-  if (!q.value) {
-    return productslist;
-  }
+const sort = ref({ column: 'title', direction: 'asc' as const })
+const sortedRows = computed(() => {
+  const sortedProducts = [...productslist]
+  const { column, direction } = sort.value
 
-  return productslist.filter((products) => {
-    page.value = 1;
-    return Object.values(products).some((value) => {
-      return String(value).toLowerCase().includes(q.value.toLowerCase());
-    });
-  });
+  if (column && direction) {
+    sortedProducts.sort((a, b) => {
+      const aValue = a[column]
+      const bValue = b[column]
+      if (aValue < bValue) return direction === 'asc' ? -1 : 1
+      if (aValue > bValue) return direction === 'asc' ? 1 : -1
+      return 0
+    })
+  }
+  return sortedProducts
 });
 
 const rows = computed(() => {
-  return filteredData.value.slice((page.value - 1) * pageCount, page.value * pageCount);
+  let filteredProducts = [...sortedRows.value]
+  if (q.value) {
+    filteredProducts = filteredProducts.filter(product => {
+      return Object.values(product).some(value => {
+        return String(value).toLowerCase().includes(q.value.toLowerCase())
+      })
+    })
+  }
+  const startIndex = (page.value - 1) * pageCount
+  const endIndex = startIndex + pageCount
+  return filteredProducts.slice(startIndex, endIndex)
 });
 
 </script>
@@ -61,14 +80,13 @@ const rows = computed(() => {
     <div class="flex px-3 py-3.5 border-b border-gray-200 dark:border-gray-700">
       <UInput v-model="q" placeholder="Filter people..." />
     </div>
-    <UTable :rows="rows" :columns="columns">
+    <UTable :rows="rows" :columns="columns"  v-model:sort="sort" sort-mode="manual">
       <template #thumbnail-data="{row}">
         <img :src="row.thumbnail" alt="" class="w-[100px] h-[100px]">
       </template>
       <template #description-data="{row}">
         <div class="text-wrap">{{ row.description }}</div>
       </template>
-      <!-- Rating cell -->
       <template #rating-data="{row}">
         <div :class="{ 'bg-red-500/40': row.rating < 4.5, 'bg-green-500/40': row.rating >= 4.5 }" class="px-3 py-2">
           {{ row.rating }}
